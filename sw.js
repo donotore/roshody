@@ -1,5 +1,5 @@
 // Offline support: keeps the app and its fonts on the phone.
-const CACHE = "rashody-v2";
+const CACHE = "rashody-v5";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 
 self.addEventListener("install", e => {

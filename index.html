@@ -38,6 +38,25 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .acct .big small{font-size:.5em;font-weight:500;opacity:.7;margin-left:4px}
 .acct .sub{font-size:13px;opacity:.85;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .acct .sub u{text-decoration:none;font-weight:700}
+.acct{padding:0;gap:0;overflow:hidden}
+.acct-head{border:0;background:none;color:inherit;text-align:left;padding:16px 18px;display:flex;flex-direction:column;gap:4px;width:100%}
+.acct-top{display:flex;justify-content:space-between;align-items:center}
+.chev{font-size:16px;opacity:.8;transition:transform .2s}
+.acct-head[aria-expanded="true"] .chev{transform:rotate(180deg)}
+.acct-list{border-top:1px solid #2E3D6B;display:flex;flex-direction:column}
+.acc{display:flex;align-items:center;gap:12px;padding:12px 18px;border:0;border-bottom:1px solid #26335C;background:none;color:inherit;text-align:left;width:100%}
+.acc .bank{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-weight:800;font-size:13px;flex:none;color:#fff}
+.acc .nm{flex:1;min-width:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acc .nm small{display:block;font-weight:500;font-size:12px;opacity:.65}
+.acc .v{font-weight:700;white-space:nowrap}
+.acc .v.neg{color:#F87171}
+.acc-sep{padding:12px 18px 6px;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;opacity:.6;border-bottom:1px solid #26335C}
+.acc-add{border:0;background:none;color:var(--accent);font-weight:700;font-size:14px;padding:14px 18px;text-align:left}
+.cardchips{display:flex;flex-wrap:wrap;gap:8px}
+.cchip{border:1px solid var(--line);background:var(--bg);border-radius:99px;padding:8px 12px;font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:6px}
+.cchip i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.cchip[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 18%,var(--surface))}
+.danger{height:48px;border-radius:14px;border:1px solid var(--warn);background:none;color:var(--warn);font-weight:600;font-size:15px}
 .acct-row{display:flex;justify-content:space-between;align-items:center}
 .gear{width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;font-size:16px}
 
@@ -174,11 +193,14 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
   </div>
 
   <div id="moneyView" style="display:flex;flex-direction:column;gap:20px">
-  <button type="button" class="acct num" id="acct" aria-label="Изменить начальный баланс">
-    <span class="label" style="color:inherit;opacity:.7">Сейчас на счёте</span>
-    <span class="big" id="nowBal">0<small>₽</small></span>
-    <span class="sub"><span id="startLbl">Начальный баланс: 0 ₽</span><u>Изменить</u></span>
-  </button>
+  <section class="acct num">
+    <button type="button" class="acct-head" id="acctToggle" aria-expanded="false" aria-controls="acctList">
+      <span class="acct-top"><span class="label" style="color:inherit;opacity:.7">На счетах</span><span class="chev" aria-hidden="true">▾</span></span>
+      <span class="big" id="nowBal">0<small>₽</small></span>
+      <span class="sub" id="acctSub">Нажмите, чтобы увидеть по картам</span>
+    </button>
+    <div class="acct-list" id="acctList" hidden></div>
+  </section>
 
   <header class="month">
     <button class="icon-btn" id="prev" aria-label="Предыдущий месяц">‹</button>
@@ -198,9 +220,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 
   <section class="cats">
     <span class="label">По категориям</span>
-    <div class="seg" id="tabs">
+    <div class="seg" id="tabs" style="grid-template-columns:repeat(3,1fr)">
       <button type="button" data-k="expense" aria-pressed="true">Расходы</button>
       <button type="button" data-k="income" aria-pressed="false">Доходы</button>
+      <button type="button" data-k="cards" aria-pressed="false">По картам</button>
     </div>
     <div class="stack" id="stack"></div>
     <div class="breakdown num" id="breakdown"></div>
@@ -239,6 +262,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
     </div>
     <div class="amount-in" id="amountBox"><input id="amount" inputmode="decimal" placeholder="0" aria-label="Сумма"><span>₽</span></div>
     <div class="chips" id="chips"></div>
+    <div class="field"><label id="cardLbl">С карты</label><div class="cardchips" id="cardChips"></div></div>
+    <div class="field" id="cardSelBox" hidden><label for="card">Банк</label><select id="card"></select></div>
+    <div class="field" id="cardOtherBox" hidden><label for="cardOther">Название банка</label><input id="cardOther" placeholder="Например, Уралсиб" maxlength="40"></div>
     <div class="two">
       <div class="field"><label for="date">Дата</label><input type="date" id="date"></div>
       <div class="field"><label for="note">Комментарий</label><input id="note" placeholder="Необязательно" maxlength="80"></div>
@@ -259,11 +285,32 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 
 <div class="scrim" id="sScrim" hidden>
   <form class="sheet" id="sForm" autocomplete="off">
-    <h2>Начальный баланс<button type="button" class="icon-btn" id="sClose" aria-label="Закрыть">✕</button></h2>
-    <div class="store">Сколько денег у вас было до первой записи. К этой сумме прибавляются все доходы и вычитаются все расходы.</div>
-    <div class="amount-in"><input id="sAmount" inputmode="decimal" placeholder="0" aria-label="Начальный баланс"><span>₽</span></div>
+    <h2>Другие деньги<button type="button" class="icon-btn" id="sClose" aria-label="Закрыть">✕</button></h2>
+    <div class="store">Деньги и операции, которые не относятся к вашим счетам: наличные без отдельного счёта, записи без карты, другие банки. Введите, сколько таких денег у вас сейчас.</div>
+    <div class="amount-in"><input id="sAmount" inputmode="decimal" placeholder="0" aria-label="Сколько сейчас"><span>₽</span></div>
     <div class="err" id="sErr"></div>
     <button class="primary" type="submit">Сохранить</button>
+  </form>
+</div>
+
+<div class="scrim" id="aScrim" hidden>
+  <form class="sheet" id="aForm" autocomplete="off">
+    <h2><span id="aTitle">Новый счёт</span><button type="button" class="icon-btn" id="aClose" aria-label="Закрыть">✕</button></h2>
+    <div class="field"><label for="aBank">Банк</label><select id="aBank"></select></div>
+    <div class="field" id="aOtherBox" hidden><label for="aOther">Название банка</label><input id="aOther" placeholder="Например, Уралсиб" maxlength="40"></div>
+    <div class="field"><label>Тип карты</label>
+      <div class="seg" id="aType">
+        <button type="button" data-t="debit" aria-pressed="true">Дебетовая</button>
+        <button type="button" data-t="credit" aria-pressed="false">Кредитная</button>
+      </div>
+    </div>
+    <div class="field" id="aLimitBox" hidden><label for="aLimit">Кредитный лимит</label><input id="aLimit" inputmode="decimal" placeholder="Например, 100000"></div>
+    <div class="field"><label for="aAmount" id="aAmtLbl">Сколько сейчас на карте</label></div>
+    <div class="amount-in"><input id="aAmount" inputmode="decimal" placeholder="0" aria-label="Остаток"><span>₽</span></div>
+    <div class="store" id="aHint">Дальше остаток считается сам: доходы на эту карту прибавляются, расходы с неё вычитаются. Счёт появится кнопкой в окне записи.</div>
+    <div class="err" id="aErr"></div>
+    <button class="primary" type="submit">Сохранить</button>
+    <button class="danger" type="button" id="aDel" hidden>Убрать счёт</button>
   </form>
 </div>
 
@@ -315,7 +362,7 @@ const signed=kop=>(kop<0?"−":"")+rub(Math.abs(kop));
 const parseAmt=s=>{const v=parseFloat(String(s).replace(/\s/g,"").replace(",","."));return isFinite(v)&&v>0?Math.round(v*100):null};
 const newId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 
-let items=[], budget=0, start=0, loans=[];  // loan: {id, amount(kop), bank, due, note, closed}
+let items=[], budget=0, start=0, loans=[], accounts=[];  // account: {id, bank, start(kop)}; start = "other money" base  // loan: {id, amount(kop), bank, due, note, closed}
 const BANKS=[
   ["Сбербанк","#21A038"],["Т-Банк","#E8C100"],["ВТБ","#0A2896"],["Альфа-Банк","#EF3124"],
   ["Газпромбанк","#0D3B85"],["Райффайзенбанк","#B8A000"],["Совкомбанк","#1F4BA5"],["Почта Банк","#2C3E8F"],
@@ -327,17 +374,15 @@ let openRow=null, editing=null, formKind="expense", selCat={expense:"food",incom
 let tab="expense", filterCat=null;
 
 /* ---------- storage on this device ---------- */
-function load(){try{const d=JSON.parse(localStorage.getItem(KEY)||"{}");items=Array.isArray(d.items)?d.items:[];loans=Array.isArray(d.loans)?d.loans:[];budget=d.budget||0;start=d.start||0}catch(e){}}
-function save(){try{localStorage.setItem(KEY,JSON.stringify({items,loans,budget,start}));return true}catch(e){toast("Не удалось сохранить на устройстве");return false}}
+function load(){try{const d=JSON.parse(localStorage.getItem(KEY)||"{}");items=Array.isArray(d.items)?d.items:[];loans=Array.isArray(d.loans)?d.loans:[];accounts=Array.isArray(d.accounts)?d.accounts:[];budget=d.budget||0;start=d.start||0}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({items,loans,accounts,budget,start}));return true}catch(e){toast("Не удалось сохранить на устройстве");return false}}
 if(navigator.storage&&navigator.storage.persist){navigator.storage.persist().catch(()=>{})}
 
 /* ---------- render ---------- */
 const monthKey=d=>d.getFullYear()+"-"+pad(d.getMonth()+1);
 function plural(n,f){const m=n%100,l=n%10;return m>10&&m<20?f[2]:l===1?f[0]:l>1&&l<5?f[1]:f[2]}
 function render(){
-  const allNet=items.reduce((s,x)=>s+(kindOf(x)==="income"?x.amount:-x.amount),0);
-  $("nowBal").innerHTML=signed(start+allNet)+"<small>₽</small>";
-  $("startLbl").textContent="Начальный баланс: "+signed(start)+" ₽";
+  renderAccounts();
 
   const mk=monthKey(cur);
   $("monthName").textContent=cur.toLocaleDateString("ru-RU",{month:"long",year:"numeric"}).replace(" г.","");
@@ -359,6 +404,7 @@ function render(){
   $("editBudget").onclick=openBudget;
 
   [...$("tabs").children].forEach(b=>b.setAttribute("aria-pressed",b.dataset.k===tab));
+  if(tab==="cards"){renderCards(month);}else{
   const ofTab=month.filter(x=>kindOf(x)===tab);
   const tabTotal=ofTab.reduce((s,x)=>s+x.amount,0);
   const by={};ofTab.forEach(x=>{const c=catOf(x);(by[c.id]=by[c.id]||{c,sum:0,n:0});by[c.id].sum+=x.amount;by[c.id].n++});
@@ -379,13 +425,16 @@ function render(){
     b.onclick=()=>{filterCat=filterCat===r.c.id?null:r.c.id;openRow=null;render()};
     bk.appendChild(b);
   });
+  }
 
   let list=month;
   const fb=$("filterBox");fb.innerHTML="";
   if(filterCat){
-    const c=CATS[tab].find(c=>c.id===filterCat);
-    list=month.filter(x=>kindOf(x)===tab&&catOf(x).id===filterCat);
-    fb.innerHTML=`<div class="filter"><span>Показано: ${c?c.e+" "+c.n:""}</span><button type="button" id="clearF">Показать все</button></div>`;
+    let label;
+    if(tab==="cards"){list=month.filter(x=>cardOf(x)===filterCat);label="💳 "+filterCat;}
+    else{const c=CATS[tab].find(c=>c.id===filterCat);list=month.filter(x=>kindOf(x)===tab&&catOf(x).id===filterCat);label=c?c.e+" "+c.n:"";}
+    fb.innerHTML=`<div class="filter"><span></span><button type="button" id="clearF">Показать все</button></div>`;
+    fb.querySelector("span").textContent="Показано: "+label;
     $("clearF").onclick=()=>{filterCat=null;render()};
   }
   list=list.slice().sort((a,b)=>b.date.localeCompare(a.date)||(b.ts||0)-(a.ts||0));
@@ -410,7 +459,8 @@ function render(){
       b.innerHTML=`<span class="badge" style="background:color-mix(in srgb,var(${c.c}) 18%,transparent)">${c.e}</span>
         <span class="txt"><span class="t1"></span><span class="t2"></span></span><span class="amt num ${isInc?"in":""}">${isInc?"+":"−"}${rub(x.amount)} ₽</span>`;
       b.querySelector(".t1").textContent=c.n;
-      if(x.note)b.querySelector(".t2").textContent=x.note;else b.querySelector(".t2").remove();
+      const sub=[x.bank,x.note].filter(Boolean).join(" · ");
+      if(sub)b.querySelector(".t2").textContent=sub;else b.querySelector(".t2").remove();
       b.onclick=()=>{openRow=openRow===x.id?null:x.id;render()};
       box.appendChild(b);
       if(openRow===x.id){
@@ -429,9 +479,172 @@ function render(){
   });
 }
 
+/* ---------- cards (bank of the card) ---------- */
+const NOCARD="Не указано", CASH="Наличные";
+const cardOf=x=>x.bank||NOCARD;
+function renderCards(month){
+  const by={};
+  month.forEach(x=>{const k=cardOf(x);(by[k]=by[k]||{name:k,exp:0,inc:0,n:0});by[k][kindOf(x)==="income"?"inc":"exp"]+=x.amount;by[k].n++});
+  const ranked=Object.values(by).sort((a,b)=>b.exp-a.exp||b.inc-a.inc);
+  const totalExp=ranked.reduce((s,r)=>s+r.exp,0)||1;
+  const max=Math.max(1,...ranked.map(r=>r.exp));
+  $("stack").hidden=!ranked.some(r=>r.exp);
+  $("stack").innerHTML=ranked.filter(r=>r.exp).map(r=>`<span style="flex:${r.exp};background:${cardColor(r.name)}"></span>`).join("");
+  const bk=$("breakdown");bk.innerHTML="";
+  if(!ranked.length){bk.innerHTML=`<div class="bk-empty">В этом месяце пока нет записей.</div>`;return}
+  ranked.forEach(r=>{
+    const b=document.createElement("button");b.type="button";b.className="bk";
+    b.setAttribute("aria-pressed",filterCat===r.name);
+    b.innerHTML=`<span class="badge" style="background:${cardColor(r.name)};color:#fff;font-weight:800;font-size:14px"></span>
+      <span class="nm"></span>
+      <span class="v">−${rub(r.exp)} ₽</span>
+      <span class="bar"><i style="width:${r.exp/max*100}%;background:${cardColor(r.name)}"></i></span>
+      <span class="pc">${r.inc?'<span style="color:var(--inc)">+'+rub(r.inc)+' ₽</span>':Math.round(r.exp/totalExp*100)+"%"}</span>`;
+    b.querySelector(".badge").textContent=r.name===CASH?"₽":r.name===NOCARD?"?":bankInitials(r.name);
+    b.querySelector(".nm").innerHTML=`<span></span><small>${r.n} ${plural(r.n,["запись","записи","записей"])}</small>`;
+    b.querySelector(".nm span").textContent=r.name;
+    b.onclick=()=>{filterCat=filterCat===r.name?null:r.name;openRow=null;render()};
+    bk.appendChild(b);
+  });
+}
+function cardColor(name){return name===CASH?"#4D7C0F":name===NOCARD?"#475569":bankColor(name)}
+function fillCardSelect(){
+  $("card").innerHTML=`<option>${CASH}</option>`+BANKS.map(b=>`<option>${b[0]}</option>`).join("")+`<option value="__other">Другой банк…</option><option value="">${NOCARD}</option>`;
+}
+$("card").onchange=()=>{$("cardOtherBox").hidden=$("card").value!=="__other";if(!$("cardOtherBox").hidden)$("cardOther").focus();drawCardChips()};
+$("cardOther").oninput=()=>drawCardChips();
+function setCardField(bank){
+  const known=bank===CASH||BANKS.some(b=>b[0]===bank);
+  if(!bank){$("card").value="";$("cardOther").value=""}
+  else if(known){$("card").value=bank;$("cardOther").value=""}
+  else{$("card").value="__other";$("cardOther").value=bank}
+  $("cardOtherBox").hidden=$("card").value!=="__other";
+  cardSelOpen=!quickCards().includes(currentCard());
+  drawCardChips();
+}
+let cardSelOpen=false;
+const currentCard=()=>$("card").value==="__other"?$("cardOther").value.trim():$("card").value;
+function quickCards(){const q=accounts.map(accLabel);if(!q.includes(CASH))q.push(CASH);return q}
+function drawCardChips(){
+  const box=$("cardChips");box.innerHTML="";
+  const cur=currentCard(), q=quickCards();
+  q.forEach(name=>{
+    const b=document.createElement("button");b.type="button";b.className="cchip";
+    b.setAttribute("aria-pressed",!cardSelOpen&&cur===name);
+    b.innerHTML=`<i style="background:${cardColor(name)}"></i><span></span>`;b.querySelector("span").textContent=name;
+    b.onclick=()=>{setCardField(name)};
+    box.appendChild(b);
+  });
+  const o=document.createElement("button");o.type="button";o.className="cchip";
+  o.setAttribute("aria-pressed",cardSelOpen);o.textContent=cardSelOpen&&cur&&!q.includes(cur)?cur:(cardSelOpen&&!cur?NOCARD:"Другой…");
+  o.onclick=()=>{if(!cardSelOpen){cardSelOpen=true;if(q.includes(cur)){$("card").value="";$("cardOtherBox").hidden=true}drawCardChips()}};
+  box.appendChild(o);
+  $("cardSelBox").hidden=!cardSelOpen;
+}
+
+/* ---------- accounts (cards with balances) ---------- */
+let acctOpen=false, acctEditing=null;
+const netOf=pred=>items.reduce((s,x)=>pred(x)?s+(kindOf(x)==="income"?x.amount:-x.amount):s,0);
+const CR_SUFFIX=" · кредитная";
+const accLabel=a=>a.type==="credit"?a.bank+CR_SUFFIX:a.bank;
+const baseBank=n=>(n||"").replace(CR_SUFFIX,"");
+const accBal=a=>a.start+netOf(x=>x.bank===accLabel(a));
+const otherNet=()=>{const set=new Set(accounts.map(accLabel));return netOf(x=>!set.has(x.bank||""))};
+const isCredit=a=>a.type==="credit";
+function renderAccounts(){
+  const other=start+otherNet();
+  const own=accounts.filter(a=>!isCredit(a)), cr=accounts.filter(isCredit);
+  const total=own.reduce((s,a)=>s+accBal(a),0)+other;
+  const crAvail=cr.reduce((s,a)=>s+accBal(a),0);
+  $("nowBal").innerHTML=signed(total)+"<small>₽</small>";
+  $("acctToggle").setAttribute("aria-expanded",acctOpen);
+  $("acctSub").textContent=!accounts.length?"Нажмите, чтобы добавить свои карты"
+    :acctOpen?"Нажмите на счёт, чтобы изменить остаток"
+    :cr.length?"Плюс доступно на кредитных: "+signed(crAvail)+" ₽"
+    :accounts.length+" "+plural(accounts.length,["счёт","счёта","счетов"])+" · нажмите, чтобы раскрыть";
+  const list=$("acctList");list.hidden=!acctOpen;list.innerHTML="";
+  if(!acctOpen)return;
+  const row=(name,sub,val,onclick)=>{
+    const b=document.createElement("button");b.type="button";b.className="acc";
+    b.innerHTML=`<span class="bank" style="background:${cardColor(name)}"></span><span class="nm"><span></span><small></small></span><span class="v ${val<0?"neg":""}">${signed(val)} ₽</span>`;
+    b.querySelector(".bank").textContent=name===CASH?"₽":name==="__rest"?"…":bankInitials(name);
+    b.querySelector(".nm span").textContent=name==="__rest"?"Другие деньги":name;
+    b.querySelector(".nm small").textContent=sub;
+    b.onclick=onclick;list.appendChild(b);
+  };
+  own.forEach(a=>row(a.bank,a.bank===CASH?"Наличные":"Дебетовая",accBal(a),()=>openAccount(a)));
+  if(!accounts.length||other!==0)row("__rest","Без отдельного счёта",other,openOther);
+  if(cr.length){
+    const h=document.createElement("div");h.className="acc-sep";h.textContent="Кредитные карты · не в общей сумме";list.appendChild(h);
+    cr.forEach(a=>{const bal=accBal(a),debt=a.limit?Math.max(0,a.limit-bal):0;
+      row(a.bank,"Кредитная"+(a.limit?(debt?" · долг "+rub(debt)+" ₽":" · долга нет"):""),bal,()=>openAccount(a))});
+  }
+  const add=document.createElement("button");add.type="button";add.className="acc-add";add.textContent="+ Добавить счёт";
+  add.onclick=()=>openAccount(null);list.appendChild(add);
+}
+$("acctToggle").onclick=()=>{acctOpen=!acctOpen;renderAccounts()};
+
+$("aBank").innerHTML=`<option>${CASH}</option>`+BANKS.map(b=>`<option>${b[0]}</option>`).join("")+`<option value="__other">Другой банк…</option>`;
+$("aBank").onchange=()=>{$("aOtherBox").hidden=$("aBank").value!=="__other";if(!$("aOtherBox").hidden)$("aOther").focus()};
+function openAccount(a){
+  acctEditing=a||null;
+  $("aTitle").textContent=a?"Счёт":"Новый счёт";
+  const known=a&&(a.bank===CASH||BANKS.some(b=>b[0]===a.bank));
+  const firstFree=BANKS.map(b=>b[0]).find(n=>!accounts.some(x=>x.bank===n))||BANKS[0][0];
+  $("aBank").value=a?(known?a.bank:"__other"):firstFree;
+  $("aOther").value=a&&!known?a.bank:"";
+  $("aOtherBox").hidden=$("aBank").value!=="__other";
+  $("aAmount").value=a?String(accBal(a)/100).replace(".",","):"";
+  $("aLimit").value=a&&a.limit?String(a.limit/100):"";
+  setAType(a&&isCredit(a)?"credit":"debit");
+  $("aErr").textContent="";
+  const del=$("aDel");del.hidden=!a;delete del.dataset.sure;del.textContent="Убрать счёт";
+  $("aScrim").hidden=false;
+}
+let aType="debit";
+function setAType(t){
+  aType=t;const cr=t==="credit";
+  [...$("aType").children].forEach(b=>b.setAttribute("aria-pressed",b.dataset.t===t));
+  $("aLimitBox").hidden=!cr;
+  $("aAmtLbl").textContent=cr?"Сколько сейчас доступно на карте":"Сколько сейчас на карте";
+  $("aHint").textContent=cr
+    ?"Кредитная карта показывается отдельно и не входит в общую сумму ваших денег. Если указать лимит, будет видно, сколько вы должны банку."
+    :"Дальше остаток считается сам: доходы на эту карту прибавляются, расходы с неё вычитаются. Счёт появится кнопкой в окне записи.";
+}
+[...$("aType").children].forEach(b=>b.onclick=()=>setAType(b.dataset.t));
+$("aClose").onclick=()=>$("aScrim").hidden=true;
+$("aScrim").addEventListener("click",e=>{if(e.target.id==="aScrim")$("aScrim").hidden=true});
+$("aForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const bank=$("aBank").value==="__other"?$("aOther").value.trim():$("aBank").value;
+  if(!bank){$("aErr").textContent="Впишите название банка.";return}
+  const label=accLabel({bank,type:aType});
+  if(accounts.some(x=>accLabel(x)===label&&x!==acctEditing)){$("aErr").textContent=(aType==="credit"?"Кредитная карта «":"Счёт «")+bank+"» уже есть в списке.";return}
+  const raw=$("aAmount").value.replace(/\s/g,"").replace(",",".").replace("−","-");
+  const v=raw===""?0:parseFloat(raw);
+  if(!isFinite(v)){$("aErr").textContent="Введите остаток числом, например 25000.";return}
+  let limit=0;
+  if(aType==="credit"&&$("aLimit").value.trim()){limit=parseAmt($("aLimit").value);if(!limit){$("aErr").textContent="Введите лимит числом или оставьте поле пустым.";return}}
+  const base=Math.round(v*100)-netOf(x=>x.bank===label);
+  if(acctEditing){acctEditing.bank=bank;acctEditing.start=base;acctEditing.type=aType;acctEditing.limit=limit}
+  else accounts.push({id:newId(),bank,start:base,type:aType,limit});
+  save();$("aScrim").hidden=true;render();toast(acctEditing?"Счёт сохранён":"Счёт добавлен");
+});
+$("aDel").onclick=()=>{
+  const del=$("aDel");
+  if(!del.dataset.sure){del.dataset.sure="1";del.textContent="Точно убрать? Записи останутся";return}
+  // keep the total unchanged: the account's money moves to "other money"
+  if(isCredit(acctEditing))start-=netOf(x=>x.bank===accLabel(acctEditing));
+  else start+=acctEditing.start;
+  accounts=accounts.filter(x=>x!==acctEditing);
+  save();$("aScrim").hidden=true;render();toast("Счёт убран");
+};
+function lastCard(){try{return localStorage.getItem(KEY+"-card")||""}catch(e){return""}}
+
 /* ---------- add / edit ---------- */
 function drawForm(){
   const isInc=formKind==="income";
+  $("cardLbl").textContent=isInc?"На карту":"С карты";
   [...$("kindSeg").children].forEach(b=>b.setAttribute("aria-pressed",b.dataset.k===formKind));
   $("formTitle").textContent=(editing?"Изменить ":"Новый ")+(isInc?"доход":"расход");
   $("amountBox").classList.toggle("in",isInc);
@@ -452,6 +665,7 @@ function openForm(kind,x){
   const mk=monthKey(cur);
   $("date").value=x?x.date:(todayISO().startsWith(mk)?todayISO():mk+"-01");
   $("err").textContent="";
+  setCardField(x?(x.bank||""):(lastCard()||(accounts[0]&&accounts[0].bank)||""));
   drawForm();$("scrim").hidden=false;
   setTimeout(()=>$("amount").focus(),50);
 }
@@ -466,7 +680,10 @@ $("form").addEventListener("submit",e=>{
   const amt=parseAmt($("amount").value);
   if(!amt){$("err").textContent="Введите сумму больше нуля, например 350 или 89,90.";return}
   const date=$("date").value||todayISO();
-  const it={id:editing?editing.id:newId(),kind:formKind,amount:amt,cat:selCat[formKind],note:$("note").value.trim(),date,ts:editing?.ts||Date.now()};
+  const bank=$("card").value==="__other"?$("cardOther").value.trim():$("card").value;
+  if($("card").value==="__other"&&!bank){$("err").textContent="Впишите название банка карты.";return}
+  try{localStorage.setItem(KEY+"-card",bank)}catch(e){}
+  const it={id:editing?editing.id:newId(),kind:formKind,amount:amt,cat:selCat[formKind],bank,note:$("note").value.trim(),date,ts:editing?.ts||Date.now()};
   const wasEdit=!!editing;
   const i=items.findIndex(x=>x.id===it.id);if(i>=0)items[i]=it;else items.push(it);
   save();
@@ -488,8 +705,8 @@ $("bForm").addEventListener("submit",e=>{
   budget=v;save();render();$("bScrim").hidden=true;toast(v?"Бюджет сохранён":"Бюджет убран");
 });
 
-/* ---------- starting balance ---------- */
-$("acct").onclick=()=>{$("sAmount").value=start?String(start/100).replace(".",","):"";$("sErr").textContent="";$("sScrim").hidden=false;setTimeout(()=>$("sAmount").focus(),50)};
+/* ---------- other money (outside accounts) ---------- */
+function openOther(){const v=start+otherNet();$("sAmount").value=v?String(v/100).replace(".",","):"";$("sErr").textContent="";$("sScrim").hidden=false;setTimeout(()=>$("sAmount").focus(),50)}
 $("sClose").onclick=()=>$("sScrim").hidden=true;
 $("sScrim").addEventListener("click",e=>{if(e.target.id==="sScrim")$("sScrim").hidden=true});
 $("sForm").addEventListener("submit",e=>{
@@ -497,7 +714,7 @@ $("sForm").addEventListener("submit",e=>{
   const raw=$("sAmount").value.replace(/\s/g,"").replace(",",".").replace("−","-");
   const v=raw===""?0:parseFloat(raw);
   if(!isFinite(v)){$("sErr").textContent="Введите сумму числом, например 25000.";return}
-  start=Math.round(v*100);save();render();$("sScrim").hidden=true;toast("Начальный баланс сохранён");
+  start=Math.round(v*100)-otherNet();save();render();$("sScrim").hidden=true;toast("Сохранено");
 });
 
 /* ---------- backup ---------- */
@@ -505,7 +722,7 @@ $("backupBtn").onclick=()=>{$("kErr").textContent="";$("kScrim").hidden=false};
 $("kClose").onclick=()=>$("kScrim").hidden=true;
 $("kScrim").addEventListener("click",e=>{if(e.target.id==="kScrim")$("kScrim").hidden=true});
 $("exportBtn").onclick=async()=>{
-  const json=JSON.stringify({app:"rashody",v:2,saved:new Date().toISOString(),items,loans,budget,start},null,1);
+  const json=JSON.stringify({app:"rashody",v:3,saved:new Date().toISOString(),items,loans,accounts,budget,start},null,1);
   const name="rashody-"+todayISO()+".json";
   const file=new File([json],name,{type:"application/json"});
   try{
@@ -523,6 +740,7 @@ $("importFile").onchange=e=>{
       if(!d||!Array.isArray(d.items))throw 0;
       items=d.items.filter(x=>x&&x.id&&x.amount>0&&x.date);budget=d.budget||0;start=d.start||0;
       loans=Array.isArray(d.loans)?d.loans.filter(x=>x&&x.id&&x.amount>0):[];
+      accounts=Array.isArray(d.accounts)?d.accounts.filter(x=>x&&x.bank&&isFinite(x.start)):[];
       save();render();renderLoans();$("kScrim").hidden=true;toast("Восстановлено записей: "+items.length);
     }catch(err){$("kErr").textContent="Это не файл копии из этого приложения. Выберите файл rashody-….json."}
     e.target.value="";
@@ -538,8 +756,8 @@ let tt;function toast(t){const el=$("toast");el.textContent=t;el.hidden=false;cl
 
 /* ---------- loans ---------- */
 let loanOpen=null, loanEditing=null;
-const bankColor=name=>(BANKS.find(b=>b[0]===name)||[0,"#64748B"])[1];
-const bankInitials=name=>name.replace(/[^А-ЯЁA-Zа-яёa-z0-9 -]/g,"").split(/[\s-]+/).filter(Boolean).map(w=>w[0]).join("").slice(0,2).toUpperCase()||"₽";
+const bankColor=name=>(BANKS.find(b=>b[0]===baseBank(name))||[0,"#64748B"])[1];
+const bankInitials=name=>{const w=baseBank(name).replace(/[^А-ЯЁA-Zа-яёa-z0-9 -]/g,"").split(/[\s-]+/).filter(Boolean);return(w.length===1?w[0].slice(0,2):w.map(x=>x[0]).join("").slice(0,2)).toUpperCase()||"₽"};
 function daysTo(due){const a=new Date(todayISO()+"T12:00:00"),b=new Date(due+"T12:00:00");return Math.round((b-a)/864e5)}
 function dueState(l){
   if(l.closed)return["done","Погашен"];
@@ -628,6 +846,7 @@ function setView(v){
 }
 [...$("appTabs").children].forEach(b=>b.onclick=()=>setView(b.dataset.v));
 
+fillCardSelect();
 load();render();renderLoans();
 let startView="money";try{startView=localStorage.getItem(KEY+"-view")||"money"}catch(e){}
 setView(startView==="loans"?"loans":"money");
